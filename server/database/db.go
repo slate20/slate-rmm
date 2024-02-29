@@ -27,10 +27,17 @@ func InitDB(dataSourceName string) {
 
 // RegisterNewAgent stores a new agent in the database
 func RegisterNewAgent(agent *models.Agent) error {
+
+	// Marshal the hardware specs
+	hardwareSpecsJSON, err := json.Marshal(agent.HardwareSpecs)
+	if err != nil {
+		return err
+	}
+
 	// Prepare for SQL Statement
 	stmt, err := db.Prepare(`
-		INSERT INTO agents (hostname, ip_address, os, os_version, agent_version, last_seen)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO agents (hostname, ip_address, os, os_version, hardware_specs, agent_version, last_seen)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING host_id
 	`)
 	if err != nil {
@@ -44,6 +51,7 @@ func RegisterNewAgent(agent *models.Agent) error {
 		agent.IPAddress,
 		agent.OS,
 		agent.OSVersion,
+		hardwareSpecsJSON,
 		agent.AgentVersion,
 		time.Now(),
 	).Scan(&agent.ID)
