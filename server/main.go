@@ -10,11 +10,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// main is the entry point for the application
 func main() {
 	//Initialize the database connection
 	dsn := "host=localhost user=postgres password=slatermm dbname=agents_db sslmode=disable"
 	database.InitDB(dsn)
 
+	// Create a new router
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", handlers.HomeHandler).Methods("GET")
 	router.HandleFunc("/api/agents/register", handlers.AgentRegistration).Methods("POST")
