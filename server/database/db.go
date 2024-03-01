@@ -129,3 +129,9 @@ func DeleteAgent(id string) error {
 	_, err := db.Exec("DELETE FROM agents WHERE host_id = $1", id)
 	return err
 }
+
+// AgentHeartbeat updates the last_seen field of an agent
+func AgentHeartbeat(id string) error {
+	_, err := db.Exec("UPDATE agents SET last_seen = $1 WHERE host_id = $2", time.Now(), id)
+	return err
+}

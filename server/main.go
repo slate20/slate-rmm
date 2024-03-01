@@ -24,6 +24,7 @@ func main() {
 	router.HandleFunc("/api/agents/{id}", handlers.GetAgent).Methods("GET")
 	router.HandleFunc("/api/agents/{id}", handlers.UpdateAgent).Methods("PUT")
 	router.HandleFunc("/api/agents/{id}", handlers.DeleteAgent).Methods("DELETE")
+	router.HandleFunc("/api/agents/{id}/heartbeat", handlers.AgentHeartbeat).Methods("POST")
 
 	// Start the server
 	fmt.Println("Starting server on the port 8080...")

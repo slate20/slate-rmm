@@ -25,6 +25,7 @@ type Hardware struct {
 }
 
 type AgentData struct {
+	ID            int32    `json:"id"`
 	Hostname      string   `json:"hostname"`
 	IPAddress     string   `json:"ip_address"`
 	OS            string   `json:"os"`
@@ -39,7 +40,6 @@ func getHardwareSpecs() (Hardware, error) {
 
 	// Get OS info
 	hardware.OS = runtime.GOOS
-	log.Printf("OS: %s\n", hardware.OS)
 
 	// Get OS version
 	hostInfo, err := host.Info()
@@ -47,7 +47,6 @@ func getHardwareSpecs() (Hardware, error) {
 		return hardware, err
 	}
 	hardware.OSVersion = hostInfo.PlatformVersion
-	log.Printf("OS Version: %s\n", hardware.OSVersion)
 
 	// Get IP address
 	addrs, err := net.InterfaceAddrs()
@@ -62,7 +61,6 @@ func getHardwareSpecs() (Hardware, error) {
 			}
 		}
 	}
-	log.Printf("IP Address: %s\n", hardware.IPAddress)
 
 	// Get CPU info
 	cpuInfo, err := cpu.Info()
@@ -71,7 +69,6 @@ func getHardwareSpecs() (Hardware, error) {
 	}
 	if len(cpuInfo) > 0 {
 		hardware.CPU = strings.TrimSpace(cpuInfo[0].ModelName)
-		log.Printf("CPU: %s", hardware.CPU)
 	}
 
 	// Get memory info
@@ -80,7 +77,6 @@ func getHardwareSpecs() (Hardware, error) {
 		return hardware, err
 	}
 	hardware.Memory = strconv.FormatUint(memInfo.Total/1024/1024, 10) + "MB"
-	log.Printf("Memory: %s", hardware.Memory)
 
 	// Get disk info (total storage)
 	switch runtime.GOOS {
@@ -97,7 +93,6 @@ func getHardwareSpecs() (Hardware, error) {
 			}
 			hardware.Storage += partition.Device + ": " + strconv.FormatUint(diskInfo.Total/1024/1024/1024, 10) + "GB; "
 		}
-		log.Printf("Storage: %s\n", hardware.Storage)
 
 		return hardware, nil
 	default:
@@ -106,7 +101,6 @@ func getHardwareSpecs() (Hardware, error) {
 			return hardware, err
 		}
 		hardware.Storage = strconv.FormatUint(diskInfo.Total/1024/1024/1024, 10) + " GB"
-		log.Printf("Storage: %s\n", hardware.Storage)
 
 		return hardware, nil
 	}

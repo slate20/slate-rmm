@@ -10,6 +10,7 @@ import (
 
 const ServerURL = "http://192.168.1.10:8080" // Replace with actual server URL
 
+// Register sends a POST request to the server to register the agent
 func Register(data collectors.AgentData) error {
 	// Convert data to JSON
 	jsonData, err := json.Marshal(data)

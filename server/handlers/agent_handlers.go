@@ -90,3 +90,17 @@ func DeleteAgent(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+// AgentHeartbeat updates the last seen time of an agent
+func AgentHeartbeat(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	err := database.AgentHeartbeat(id)
+	if err != nil {
+		http.Error(w, "error updating agent", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
