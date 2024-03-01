@@ -96,11 +96,16 @@ func AgentHeartbeat(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
+	var agent models.Agent
+	// Decode the incoming JSON to the agent struct
+	if err := json.NewDecoder(r.Body).Decode(&agent); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
 	err := database.AgentHeartbeat(id)
 	if err != nil {
 		http.Error(w, "error updating agent", http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
