@@ -18,7 +18,6 @@ func main() {
 
 	// Create a new router
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/", handlers.HomeHandler).Methods("GET")
 	router.HandleFunc("/api/agents/register", handlers.AgentRegistration).Methods("POST")
 	router.HandleFunc("/api/agents", handlers.GetAllAgents).Methods("GET")
 	router.HandleFunc("/api/agents/{id}", handlers.GetAgent).Methods("GET")
