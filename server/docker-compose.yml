@@ -27,6 +27,6 @@ services:
 #     volumes:
 #       - influxdb-data:/var/lib/influxdb2
 
-# volumes:
-#   postgres-data:
+volumes:
+  postgres-data:
 #   influxdb-data:
