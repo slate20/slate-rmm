@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"slate-rmm/handlers"
 
 	"github.com/gorilla/mux"
@@ -12,6 +13,12 @@ func NewGateway() *mux.Router {
 
 	// Define routes for each microservice
 	agentRoutes(router.PathPrefix("/api/agents").Subrouter())
+
+	// Serve the agent executable
+	router.HandleFunc("/download/agent", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Disposition", "attachment; filename=slate-rmm-agent")
+		http.ServeFile(w, r, "../agent/slate-rmm-agent")
+	})
 
 	return router
 
