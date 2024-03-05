@@ -12,6 +12,13 @@ services:
       - ./initdb:/docker-entrypoint-initdb.d
       - postgres-data:/var/lib/postgresql/data
 
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ../dashboard:/usr/share/nginx/html
+
 #   influxdb:
 #     image: influxdb:2.0
 #     ports:
