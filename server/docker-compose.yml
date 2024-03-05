@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:latest
     environment:
-      POSTGRES_DB: agents_db
+      POSTGRES_DB: RMM_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: slatermm
     ports:
