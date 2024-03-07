@@ -20,8 +20,8 @@ func main() {
 	corsRouter := CORSMiddleware(router)
 
 	// Start the server
-	fmt.Println("Starting server on the port 8081...")
-	log.Fatal(http.ListenAndServe(":8081", corsRouter))
+	fmt.Println("Starting server on the port 8080...")
+	log.Fatal(http.ListenAndServe(":8080", corsRouter))
 }
 
 func CORSMiddleware(next http.Handler) http.Handler {

@@ -16,8 +16,8 @@ func NewGateway() *mux.Router {
 
 	// Serve the agent executable
 	router.HandleFunc("/download/agent", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Content-Disposition", "attachment; filename=slate-rmm-agent")
-		http.ServeFile(w, r, "../agent/slate-rmm-agent")
+		w.Header().Add("Content-Disposition", "attachment; filename=slate-rmm-agent.exe")
+		http.ServeFile(w, r, "../agent/slate-rmm-agent.exe")
 	})
 
 	return router

@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"slate-rmm/models"
 	"time"
 
@@ -13,16 +12,18 @@ import (
 var db *sql.DB
 
 // InitDB initializes the database connection
-func InitDB(dataSourceName string) {
+func InitDB(dataSourceName string) error {
 	var err error
 	db, err = sql.Open("postgres", dataSourceName)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	if err = db.Ping(); err != nil {
-		log.Panic(err)
+		return err
 	}
+
+	return nil
 }
 
 // RegisterNewAgent stores a new agent in the database
