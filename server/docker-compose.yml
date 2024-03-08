@@ -12,29 +12,22 @@ services:
       - ./initdb:/docker-entrypoint-initdb.d
       - postgres-data:/var/lib/postgresql/data
 
-  nginx:
-    image: nginx:latest
-    ports:
-      - "80:80"
-    volumes:
-      - ../dashboard:/usr/share/nginx/html
-      - ./default.conf:/etc/nginx/conf.d/default.conf
+  # nginx:
+  #   image: nginx:latest
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ../dashboard:/usr/share/nginx/html
+  #     - ./default.conf:/etc/nginx/conf.d/default.conf
 
-#   influxdb:
-#     image: influxdb:2.0
-#     ports:
-#       - "8086:8086"
-#     environment:
-#       - DOCKER_INFLUXDB_INIT_MODE=setup
-#       - DOCKER_INFLUXDB_INIT_USERNAME=admin  # Customize as needed
-#       - DOCKER_INFLUXDB_INIT_PASSWORD=slatermm  # Your chosen password
-#       - DOCKER_INFLUXDB_INIT_ORG=myorg  # Customize as needed
-#       - DOCKER_INFLUXDB_INIT_BUCKET=metrics_db  # Initial bucket name
-#       - DOCKER_INFLUXDB_INIT_RETENTION=1w  # Retention policy, customize as needed
-#       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=myadmintoken  # A token you'll use for admin operations
-#     volumes:
-#       - influxdb-data:/var/lib/influxdb2
+  checkmk:
+    image: checkmk/check-mk-raw:latest
+    ports:
+      - "5000:5000"
+      - "8000:8000"
+    volumes:
+      - checkmk-data:/opt/omd/sites
 
 volumes:
   postgres-data:
-#   influxdb-data:
+  checkmk-data:
