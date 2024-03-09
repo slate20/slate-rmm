@@ -4,14 +4,24 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"slate-rmm/database"
 	"slate-rmm/models"
+	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 // AgentRegistration handles the registration of a new agent
 func AgentRegistration(w http.ResponseWriter, r *http.Request) {
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		http.Error(w, "could not load .env file", http.StatusInternalServerError)
+		return
+	}
+
 	var newAgent models.Agent
 	// Decode the incoming JSON to the newAgent struct
 	if err := json.NewDecoder(r.Body).Decode(&newAgent); err != nil {
@@ -23,6 +33,48 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error registering agent", http.StatusInternalServerError)
 		return
 	}
+
+	// Prepare payload for CheckMK host creation
+	payload := map[string]interface{}{
+		"folder":    "/",
+		"host_name": newAgent.Hostname,
+		"attributes": map[string]string{
+			"ipaddress": newAgent.IPAddress,
+		},
+	}
+	payloadStr, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, "could not marshal payload", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Payload: %s\n", payloadStr)
+
+	// Create a new request
+	req, err := http.NewRequest("POST", "http://localhost:5000/main/check_mk/api/1.0/domain-types/host_config/collections/all", strings.NewReader(string(payloadStr)))
+	if err != nil {
+		http.Error(w, "error creating request", http.StatusInternalServerError)
+		return
+	}
+
+	// Set the content type to application/json
+	req.Header.Set("Content-Type", "application/json")
+	// Set the authorization header
+	req.Header.Set("Authorization", "Bearer automation "+os.Getenv("AUTOMATION_SECRET"))
+	// req.Header.Set("Authorization", "Bearer cmkadmin slatermm")
+	req.Header.Set("Accept", "application/json")
+
+	log.Printf("Request: %v\n", req)
+
+	// Send the request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, "error sending request", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	log.Printf("Response: %v\n", resp)
 
 	// Respond with the registered agent
 	w.WriteHeader(http.StatusCreated)

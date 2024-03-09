@@ -25,8 +25,15 @@ services:
     ports:
       - "5000:5000"
       - "8000:8000"
+    environment:
+      - CMK_PASSWORD=slatermm
+      - CMK_SITE_ID=main
+      - AUTOMATION_SECRET=${AUTOMATION_SECRET}
     volumes:
-      - checkmk-data:/opt/omd/sites
+      - checkmk-data:/omd/sites
+    env_file:
+      - .env
+    command: /bin/bash -c "omd start main && echo $$AUTOMATION_SECRET > /opt/omd/sites/main/var/check_mk/web/automation/automation.secret && tail -f /dev/null"
 
 volumes:
   postgres-data:

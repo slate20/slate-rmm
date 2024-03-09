@@ -20,6 +20,12 @@ cd server
 # Set permissions for the server binary
 chmod +x slatermm
 
+# Generate a random secret for Checkmk automation
+export AUTOMATION_SECRET=$(openssl rand -base64 32)
+
+# Write the secret to the .env file
+echo "AUTOMATION_SECRET=$AUTOMATION_SECRET" > .env
+
 # Create a systemd service file for the server
 echo "[Unit]
 Description=SlaterMM Server
