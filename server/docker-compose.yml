@@ -20,22 +20,6 @@ services:
   #     - ../dashboard:/usr/share/nginx/html
   #     - ./default.conf:/etc/nginx/conf.d/default.conf
 
-  # checkmk:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "5000:5000"
-  #     - "8000:8000"
-  #   environment:
-  #     - CMK_PASSWORD=slatermm
-  #     - CMK_SITE_ID=main
-  #     - AUTOMATION_SECRET=${AUTOMATION_SECRET}
-  #   volumes:
-  #     - checkmk-data:/omd/sites
-  #   env_file:
-  #     - .env
-
   checkmk:
     image: checkmk/check-mk-raw:latest
     ports:

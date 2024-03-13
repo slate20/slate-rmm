@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,7 +28,7 @@ func main() {
 	//Get the directory of the executable
 	exe, err := os.Executable()
 	if err != nil {
-		log.Fatalf("could not get the directory of the executable: %v", err)
+		log.Printf("could not get the directory of the executable: %v", err)
 	}
 	dir := filepath.Dir(exe)
 
@@ -43,7 +44,7 @@ func main() {
 		var serverURL string
 		_, err := fmt.Scan(&serverURL)
 		if err != nil {
-			log.Fatalf("could not read server IP/Hostname: %v", err)
+			log.Printf("could not read server IP/Hostname: %v", err)
 		}
 
 		// Append "http://" and ":8080" to the server URL
@@ -52,65 +53,79 @@ func main() {
 		// Collect data
 		data, err := collectors.CollectData()
 		if err != nil {
-			log.Fatalf("could not collect data: %v", err)
+			log.Printf("could not collect data: %v", err)
 		}
 
 		// Save the config in the config file
-		bytes, err := json.Marshal(config)
+		configBytes, err := json.Marshal(config)
 		if err != nil {
-			log.Fatalf("could not marshal config: %v", err)
+			log.Printf("could not marshal config: %v", err)
 		}
 
-		err = os.WriteFile(configPath, bytes, 0644)
+		err = os.WriteFile(configPath, configBytes, 0644)
 		if err != nil {
-			log.Fatalf("could not write config file: %v", err)
+			log.Printf("could not write config file: %v", err)
 		}
 
 		// Download the CheckMK agent
 		err = downloadFile("http://localhost:5000/main/check_mk/agents/windows/check_mk_agent.msi", "check_mk_agent.msi")
 		if err != nil {
-			log.Fatalf("could not download CheckMK agent: %v", err)
+			log.Printf("could not download CheckMK agent: %v", err)
 		}
 
 		// Install the CheckMK agent
 		err = exec.Command("msiexec", "/i", "check_mk_agent.msi", "/qn").Run()
 		if err != nil {
-			log.Fatalf("could not install CheckMK agent: %v", err)
+			log.Printf("could not install CheckMK agent: %v", err)
 		}
 
 		// Download CheckMK Inventory plugin
 		err = downloadFile("http://localhost:5000/main/check_mk/agents/windows/plugins/mk_inventory.vbs", "mk_inventory.vbs")
 		if err != nil {
-			log.Fatalf("could not download CheckMK Inventory plugin: %v", err)
+			log.Printf("could not download CheckMK Inventory plugin: %v", err)
 		}
 
 		// Move the CheckMK Inventory plugin to the plugins directory
-		err = os.Rename("mk_inventory.vbs", "C:\\Program Files (x86)\\check_mk\\service\\plugins\\mk_inventory.vbs")
+		err = os.Rename("mk_inventory.vbs", "C:\\Program Files (x86)\\checkmk\\service\\plugins\\mk_inventory.vbs")
 		if err != nil {
-			log.Fatalf("could not move CheckMK Inventory plugin: %v", err)
+			log.Printf("could not move CheckMK Inventory plugin: %v", err)
 		}
 
 		// Register the agent
 		config.HostID, err = server.Register(data, config.ServerURL)
 		if err != nil {
-			log.Fatalf("could not register with the server: %v", err)
+			log.Printf("could not register with the server: %v", err)
+		}
+
+		// Register the CheckMK agent with the CheckMK server
+		cmd := exec.Command("C:\\Program Files (x86)\\checkmk\\service\\cmk-agent-ctl.exe", "register", "--hostname", data.Hostname, "--server", serverURL+":8000", "--site", "main", "--user", "cmkadmin", "--password", "slatermmdev")
+
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+
+		err = cmd.Run()
+		if err != nil {
+			log.Printf("could not register CheckMK agent: %v", err)
+			log.Printf("stdout: %s", stdout.String())
+			log.Printf("stderr: %s", stderr.String())
 		}
 
 	} else {
 		// If the config file exists, read the config from the file
-		bytes, err := os.ReadFile(configPath)
+		configBytes, err := os.ReadFile(configPath)
 		if err != nil {
-			log.Fatalf("could not read config file: %v", err)
+			log.Printf("could not read config file: %v", err)
 		}
 
-		err = json.Unmarshal(bytes, &config)
+		err = json.Unmarshal(configBytes, &config)
 		if err != nil {
-			log.Fatalf("could not unmarshal config: %v", err)
+			log.Printf("could not unmarshal config: %v", err)
 		}
 	}
 
 	// Pause the program
-	fmt.Println("Press enter to continue...")
+	fmt.Println("Press enter to close...")
 	fmt.Scanln()
 
 	// Send a heartbeat every minute
