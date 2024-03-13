@@ -60,7 +60,7 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 	// Set the content type to application/json
 	req.Header.Set("Content-Type", "application/json")
 	// Set the authorization header
-	req.Header.Set("Authorization", "Bearer automation "+os.Getenv("AUTOMATION_SECRET"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("API_USER")+" "+os.Getenv("AUTOMATION_SECRET"))
 	// req.Header.Set("Authorization", "Bearer cmkadmin slatermm")
 	req.Header.Set("Accept", "application/json")
 
