@@ -27,6 +27,7 @@ func NewGateway() *mux.Router {
 // agentRoutes defines the routes for the agent database microservice
 func agentRoutes(router *mux.Router) {
 	router.HandleFunc("/register", handlers.AgentRegistration).Methods("POST")
+	router.HandleFunc("/cmksvcd", handlers.CMKSvcDiscovery).Methods("POST")
 	router.HandleFunc("", handlers.GetAllAgents).Methods("GET")
 	router.HandleFunc("/{id}", handlers.GetAgent).Methods("GET")
 	router.HandleFunc("/{id}", handlers.UpdateAgent).Methods("PUT")

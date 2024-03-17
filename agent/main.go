@@ -22,6 +22,13 @@ type Config struct {
 }
 
 func main() {
+	// Add a defer statement to recover from panics
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("recovered from panic: %v", r)
+		}
+	}()
+
 	var config Config
 	var err error
 
@@ -51,6 +58,7 @@ func main() {
 		config.ServerURL = "http://" + serverURL + ":8080"
 
 		// Collect data
+		fmt.Println("Collecting system data...")
 		data, err := collectors.CollectData()
 		if err != nil {
 			log.Printf("could not collect data: %v", err)
@@ -68,12 +76,14 @@ func main() {
 		}
 
 		// Download the CheckMK agent
+		fmt.Println("Downloading CheckMK agent...")
 		err = downloadFile("http://localhost:5000/main/check_mk/agents/windows/check_mk_agent.msi", "check_mk_agent.msi")
 		if err != nil {
 			log.Printf("could not download CheckMK agent: %v", err)
 		}
 
 		// Install the CheckMK agent
+		fmt.Println("Installing CheckMK agent...")
 		err = exec.Command("msiexec", "/i", "check_mk_agent.msi", "/qn").Run()
 		if err != nil {
 			log.Printf("could not install CheckMK agent: %v", err)
@@ -86,18 +96,20 @@ func main() {
 		}
 
 		// Move the CheckMK Inventory plugin to the plugins directory
-		err = os.Rename("mk_inventory.vbs", "C:\\Program Files (x86)\\checkmk\\service\\plugins\\mk_inventory.vbs")
+		err = os.Rename("mk_inventory.vbs", "C:\\ProgramData\\checkmk\\agent\\plugins\\mk_inventory.vbs")
 		if err != nil {
 			log.Printf("could not move CheckMK Inventory plugin: %v", err)
 		}
 
 		// Register the agent
+		fmt.Println("Registering agent...")
 		config.HostID, err = server.Register(data, config.ServerURL)
 		if err != nil {
 			log.Printf("could not register with the server: %v", err)
 		}
 
 		// Register the CheckMK agent with the CheckMK server
+		fmt.Println("Registering CheckMK agent...")
 		cmd := exec.Command("C:\\Program Files (x86)\\checkmk\\service\\cmk-agent-ctl.exe", "register", "--hostname", data.Hostname, "--server", serverURL+":8000", "--site", "main", "--user", "cmkadmin", "--password", "slatermmdev")
 
 		var stdout, stderr bytes.Buffer
@@ -110,6 +122,48 @@ func main() {
 			log.Printf("stdout: %s", stdout.String())
 			log.Printf("stderr: %s", stderr.String())
 		}
+
+		// Sleep for 2 minutes to allow the agent to register with the CheckMK server
+		fmt.Println("Waiting to run service discovery (2m)...")
+		time.Sleep(2 * time.Minute)
+
+		// Send service discovery request to the server
+		fmt.Println("Sending service discovery request...")
+		// Prepare the request body
+		body := map[string]string{
+			"host_name": data.Hostname,
+		}
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			log.Printf("could not marshal request body: %v", err)
+		}
+
+		// Create the request
+		req, err := http.NewRequest("POST", config.ServerURL+"/api/agents/cmksvcd", bytes.NewBuffer(bodyBytes))
+		if err != nil {
+			log.Printf("could not create request: %v", err)
+		}
+
+		// Set the content type to application/json
+		req.Header.Set("Content-Type", "application/json")
+
+		//  Print the request
+		log.Printf("Request: %v", req)
+
+		// Send the request
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Printf("could not send request: %v", err)
+		}
+		defer resp.Body.Close()
+		// Log the response
+		bodyRespBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("could not read response body: %v", err)
+		}
+		bodyResp := string(bodyRespBytes)
+		log.Printf("Response: %v", bodyResp)
+		log.Println("Service discovery request sent")
 
 	} else {
 		// If the config file exists, read the config from the file
@@ -124,9 +178,10 @@ func main() {
 		}
 	}
 
-	// Pause the program
-	fmt.Println("Press enter to close...")
-	fmt.Scanln()
+	// Pause until the user presses a key
+	// fmt.Println("Press any key to exit...")
+	// var input string
+	// fmt.Scanln(&input)
 
 	// Send a heartbeat every minute
 	ticker := time.NewTicker(5 * time.Minute)

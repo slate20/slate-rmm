@@ -5,9 +5,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"slate-rmm/database"
 	"slate-rmm/models"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -20,6 +22,23 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "could not load .env file", http.StatusInternalServerError)
 		return
+	}
+
+	apiURL := os.Getenv("API_URL")
+	if apiURL == "" {
+		log.Fatal("API_URL is not set in .env file")
+	}
+	siteName := os.Getenv("SITE_NAME")
+	if siteName == "" {
+		log.Fatal("SITE_NAME is not set in .env file")
+	}
+	apiUser := os.Getenv("API_USER")
+	if apiUser == "" {
+		log.Fatal("API_USER is not set in .env file")
+	}
+	apiPass := os.Getenv("AUTOMATION_SECRET")
+	if apiPass == "" {
+		log.Fatal("AUTOMATION_SECRET is not set in .env file")
 	}
 
 	var newAgent models.Agent
@@ -51,7 +70,7 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Payload: %s\n", payloadStr)
 
 	// Create a new request
-	req, err := http.NewRequest("POST", "http://localhost:5000/main/check_mk/api/1.0/domain-types/host_config/collections/all", strings.NewReader(string(payloadStr)))
+	req, err := http.NewRequest("POST", apiURL+"/domain-types/host_config/collections/all", strings.NewReader(string(payloadStr)))
 	if err != nil {
 		http.Error(w, "error creating request", http.StatusInternalServerError)
 		return
@@ -60,8 +79,8 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 	// Set the content type to application/json
 	req.Header.Set("Content-Type", "application/json")
 	// Set the authorization header
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("API_USER")+" "+os.Getenv("AUTOMATION_SECRET"))
-	// req.Header.Set("Authorization", "Bearer cmkadmin slatermm")
+	req.Header.Set("Authorization", "Bearer "+apiUser+" "+apiPass)
+	// req.Header.Set
 	req.Header.Set("Accept", "application/json")
 
 	log.Printf("Request: %v\n", req)
@@ -76,9 +95,68 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Response: %v\n", resp)
 
+	// Sleep for 5 seconds to allow host creation to complete
+	time.Sleep(5 * time.Second)
+
+	// Run the CheckMK service discovery script
+	cmd := exec.Command("./handlers/cmk_svcd.sh", newAgent.Hostname)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		log.Printf("cmd.Run() failed with %s\n", err)
+	}
+
 	// Respond with the registered agent
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(newAgent)
+}
+
+// CheckMKServiceDiscovery runs the CheckMK service discovery script
+func CMKSvcDiscovery(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received service discovery request")
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		http.Error(w, "could not load .env file", http.StatusInternalServerError)
+		return
+	}
+
+	apiURL := os.Getenv("API_URL")
+	if apiURL == "" {
+		log.Fatal("API_URL is not set in .env file")
+	}
+	apiUser := os.Getenv("API_USER")
+	if apiUser == "" {
+		log.Fatal("API_USER is not set in .env file")
+	}
+	apiPass := os.Getenv("AUTOMATION_SECRET")
+	if apiPass == "" {
+		log.Fatal("AUTOMATION_SECRET is not set in .env file")
+	}
+
+	// Decode the incoming JSON to get the hostname
+	var data map[string]string
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	hostname := data["host_name"]
+
+	// Run the CheckMK service discovery script
+	log.Println("Running service discovery script")
+	cmd := exec.Command("./handlers/cmk_svcd.sh", hostname)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		log.Printf("cmd.Run() failed with %s\n", err)
+	}
+	log.Println("Service discovery script complete")
 }
 
 // GetAllAgents returns all the agents in the database
