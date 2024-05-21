@@ -11,4 +11,4 @@ Our project aims to revolutionize IT management by consolidating a comprehensive
 - **Singular Deployment, Comprehensive Functionality:** By consolidating multiple IT management tools into a single deployment, we aim to simplify the setup process and streamline workflow for administrators. Our goal is to provide users with a "one-stop shop" for all their IT management needs.
 
 ### Vision:
-We envision our project as an "IT Department-in-a-Box," offering organizations of all sizes the ability to efficiently manage their IT infrastructure with minimal overhead. By democratizing access to powerful tools and streamlining deployment processes, we aim to empower IT professionals with a robust and streamlined toolset to be effect and efficient.
+We envision our project as an "IT Department-in-a-Box," offering organizations of all sizes the ability to efficiently manage their IT infrastructure with minimal overhead. By democratizing access to powerful tools and streamlining deployment processes, we aim to empower IT professionals with a robust and streamlined toolset to be effective and efficient.
