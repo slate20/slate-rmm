@@ -16,4 +16,6 @@ type Agent struct {
 	HardwareSpecs Hardware `json:"hardware_specs"`
 	AgentVersion  string   `json:"agent_version"`
 	LastSeen      string   `json:"last_seen"`
+	LastUser      string   `json:"last_user"`
+	Token         string   `json:"token"`
 }

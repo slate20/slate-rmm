@@ -11,9 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
+
+var agentTokens = make(map[string]string)
 
 // AgentRegistration handles the registration of a new agent
 func AgentRegistration(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +98,17 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Response: %v\n", resp)
 
+	//Generate a one-time token for the agent
+	token := uuid.New().String()
+	newAgent.Token = token
+
+	// Store the token and the agent ID in the agentTokens map
+	agentTokens[newAgent.Hostname] = token
+
+	// Respond with the registered agent
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(newAgent)
+
 	// Sleep for 5 seconds to allow host creation to complete
 	time.Sleep(5 * time.Second)
 
@@ -108,10 +122,45 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("cmd.Run() failed with %s\n", err)
 	}
+}
 
-	// Respond with the registered agent
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(newAgent)
+// Verify agent token and return $AUTOMATION_SECRET
+func VerifyAgentToken(w http.ResponseWriter, r *http.Request) {
+	// Decode the incoming JSON to get the token and agent ID
+	var data map[string]string
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	token, ok := data["token"]
+	if !ok {
+		http.Error(w, "Token not provided", http.StatusBadRequest)
+		return
+	}
+
+	agentID, ok := data["agent_id"]
+	if !ok {
+		http.Error(w, "Agent ID not provided", http.StatusBadRequest)
+		return
+	}
+
+	//Verify the token
+	storedToken, ok := agentTokens[agentID]
+	if !ok || token != storedToken {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	// Delete the token from the agentTokens map
+	delete(agentTokens, agentID)
+
+	// If the token is valid, return the AUTOMATION_SECRET
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"AUTOMATION_SECRET": os.Getenv("AUTOMATION_SECRET"),
+	})
 }
 
 // CheckMKServiceDiscovery runs the CheckMK service discovery script

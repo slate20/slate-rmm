@@ -33,6 +33,7 @@ type AgentData struct {
 	HardwareSpecs Hardware `json:"hardware_specs"`
 	AgentVersion  string   `json:"agent_version"`
 	LastSeen      string   `json:"last_seen"`
+	Token         string   `json:"token"`
 }
 
 func getHardwareSpecs() (Hardware, error) {
@@ -46,6 +47,7 @@ func getHardwareSpecs() (Hardware, error) {
 	if err != nil {
 		return hardware, err
 	}
+	hardware.OS = strings.Replace(hostInfo.Platform, "Microsoft", "", 1)
 	hardware.OSVersion = hostInfo.PlatformVersion
 
 	// Get IP address

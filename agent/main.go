@@ -77,7 +77,7 @@ func main() {
 
 		// Download the CheckMK agent
 		fmt.Println("Downloading CheckMK agent...")
-		err = downloadFile("http://localhost:5000/main/check_mk/agents/windows/check_mk_agent.msi", "check_mk_agent.msi")
+		err = downloadFile("http://"+serverURL+":5000/main/check_mk/agents/windows/check_mk_agent.msi", "check_mk_agent.msi")
 		if err != nil {
 			log.Printf("could not download CheckMK agent: %v", err)
 		}
@@ -90,7 +90,7 @@ func main() {
 		}
 
 		// Download CheckMK Inventory plugin
-		err = downloadFile("http://localhost:5000/main/check_mk/agents/windows/plugins/mk_inventory.vbs", "mk_inventory.vbs")
+		err = downloadFile("http://"+serverURL+":5000/main/check_mk/agents/windows/plugins/mk_inventory.vbs", "mk_inventory.vbs")
 		if err != nil {
 			log.Printf("could not download CheckMK Inventory plugin: %v", err)
 		}
@@ -103,9 +103,26 @@ func main() {
 
 		// Register the agent
 		fmt.Println("Registering agent...")
-		config.HostID, err = server.Register(data, config.ServerURL)
+		HostID, token, err := server.Register(data, config.ServerURL)
 		if err != nil {
 			log.Printf("could not register with the server: %v", err)
+		}
+
+		// Use the token to get the AUTOMATION_SECRET
+		url := config.ServerURL + "/api/agents/secret"
+		body := map[string]string{
+			"token":    token,
+			"agent_id": fmt.Sprint(HostID),
+		}
+		jsonBody, err := json.Marshal(body)
+		if err != nil {
+			log.Printf("could not encode request body: %v", err)
+		}
+		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonBody))
+		if err != nil {
+			log.Printf("could not send request: %v", err)
+		} else {
+			defer resp.Body.Close()
 		}
 
 		// Register the CheckMK agent with the CheckMK server
@@ -130,7 +147,7 @@ func main() {
 		// Send service discovery request to the server
 		fmt.Println("Sending service discovery request...")
 		// Prepare the request body
-		body := map[string]string{
+		body = map[string]string{
 			"host_name": data.Hostname,
 		}
 		bodyBytes, err := json.Marshal(body)
@@ -151,7 +168,7 @@ func main() {
 		log.Printf("Request: %v", req)
 
 		// Send the request
-		resp, err := http.DefaultClient.Do(req)
+		resp, err = http.DefaultClient.Do(req)
 		if err != nil {
 			log.Printf("could not send request: %v", err)
 		}

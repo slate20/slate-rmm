@@ -21,19 +21,16 @@ services:
       - ./default.conf:/etc/nginx/conf.d/default.conf
 
   checkmk:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        AUTOMATION_SECRET: ${AUTOMATION_SECRET}
+    image: checkmk/check-mk-raw:latest
     ports:
       - "5000:5000"
       - "8000:8000"
     environment:
-      - CMK_PASSWORD=slatermm
+      - CMK_PASSWORD=${AUTOMATION_SECRET}
       - CMK_SITE_ID=main
+      - AUTOMATION_SECRET=${AUTOMATION_SECRET}
     volumes:
-      - checkmk-data:/opt/omd/sites
+      - checkmk-data:/omd/sites
     env_file:
       - .env
 

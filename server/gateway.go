@@ -30,6 +30,7 @@ func agentRoutes(router *mux.Router) {
 	router.HandleFunc("/cmksvcd", handlers.CMKSvcDiscovery).Methods("POST")
 	router.HandleFunc("", handlers.GetAllAgents).Methods("GET")
 	router.HandleFunc("/{id}", handlers.GetAgent).Methods("GET")
+	router.HandleFunc("/secret", handlers.VerifyAgentToken).Methods("GET")
 	router.HandleFunc("/{id}", handlers.UpdateAgent).Methods("PUT")
 	router.HandleFunc("/{id}", handlers.DeleteAgent).Methods("DELETE")
 	router.HandleFunc("/{id}/heartbeat", handlers.AgentHeartbeat).Methods("POST")

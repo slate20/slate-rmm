@@ -23,8 +23,11 @@ chmod +x slatermm
 # Generate a random secret for Checkmk automation
 export AUTOMATION_SECRET=$(openssl rand -base64 32)
 
-# Write the secret to the .env file
-echo "AUTOMATION_SECRET=$AUTOMATION_SECRET" > .env
+# Write API info and secret to the .env file
+echo "API_USER=cmkadmin" > .env
+echo "AUTOMATION_SECRET=$AUTOMATION_SECRET" >> .env
+echo "SITE_NAME=main" >> .env
+echo "API_URL=http://localhost:5000/main/check_mk/api/1.0" >> .env
 
 # Create a systemd service file for the server
 echo "[Unit]
