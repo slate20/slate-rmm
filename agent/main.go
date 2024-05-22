@@ -101,12 +101,15 @@ func main() {
 			log.Printf("could not move CheckMK Inventory plugin: %v", err)
 		}
 
-		// Register the agent
+		// Register the agent and get the token for AUTOMATION_SECRET
 		fmt.Println("Registering agent...")
 		HostID, token, err := server.Register(data, config.ServerURL)
 		if err != nil {
 			log.Printf("could not register with the server: %v", err)
 		}
+
+		// Save the HostID in the config
+		config.HostID = HostID
 
 		// Use the token to get the AUTOMATION_SECRET
 		url := config.ServerURL + "/api/agents/secret"
@@ -118,6 +121,7 @@ func main() {
 		if err != nil {
 			log.Printf("could not encode request body: %v", err)
 		}
+		// log.Printf("Sending request: %s", string(jsonBody))
 		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonBody))
 		if err != nil {
 			log.Printf("could not send request: %v", err)
@@ -125,9 +129,17 @@ func main() {
 			defer resp.Body.Close()
 		}
 
+		// Decode the response to get the AUTOMATION_SECRET
+		var result struct {
+			Secret string `json:"secret"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			log.Printf("could not decode response: %v", err)
+		}
+
 		// Register the CheckMK agent with the CheckMK server
 		fmt.Println("Registering CheckMK agent...")
-		cmd := exec.Command("C:\\Program Files (x86)\\checkmk\\service\\cmk-agent-ctl.exe", "register", "--hostname", data.Hostname, "--server", serverURL+":8000", "--site", "main", "--user", "cmkadmin", "--password", "slatermmdev")
+		cmd := exec.Command("C:\\Program Files (x86)\\checkmk\\service\\cmk-agent-ctl.exe", "register", "--hostname", data.Hostname, "--server", serverURL+":8000", "--site", "main", "--user", "cmkadmin", "--password", result.Secret)
 
 		var stdout, stderr bytes.Buffer
 		cmd.Stdout = &stdout
@@ -139,6 +151,9 @@ func main() {
 			log.Printf("stdout: %s", stdout.String())
 			log.Printf("stderr: %s", stderr.String())
 		}
+
+		// Delete the AUTOMATION_SECRET
+		result.Secret = ""
 
 		// Sleep for 2 minutes to allow the agent to register with the CheckMK server
 		fmt.Println("Waiting to run service discovery (2m)...")

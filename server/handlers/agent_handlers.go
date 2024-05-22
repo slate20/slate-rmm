@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"slate-rmm/database"
 	"slate-rmm/models"
+	"strconv"
 	"strings"
 	"time"
 
@@ -86,7 +87,7 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 	// req.Header.Set
 	req.Header.Set("Accept", "application/json")
 
-	log.Printf("Request: %v\n", req)
+	// log.Printf("Request: %v\n", req)
 
 	// Send the request
 	resp, err := http.DefaultClient.Do(req)
@@ -96,24 +97,30 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	log.Printf("Response: %v\n", resp)
+	//log.Printf("Response: %v\n", resp)
 
 	//Generate a one-time token for the agent
 	token := uuid.New().String()
 	newAgent.Token = token
 
+	// Convert the agent ID to a string
+	agentIDStr := strconv.Itoa(int(newAgent.ID))
+
 	// Store the token and the agent ID in the agentTokens map
-	agentTokens[newAgent.Hostname] = token
+	agentTokens[agentIDStr] = token
 
 	// Respond with the registered agent
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(newAgent)
+	newAgentWithToken := newAgent
+	newAgentWithToken.Token = token
+	json.NewEncoder(w).Encode(newAgentWithToken)
 
 	// Sleep for 5 seconds to allow host creation to complete
 	time.Sleep(5 * time.Second)
 
 	// Run the CheckMK service discovery script
 	cmd := exec.Command("./handlers/cmk_svcd.sh", newAgent.Hostname)
+	cmd.Env = append(os.Environ(), "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -126,22 +133,26 @@ func AgentRegistration(w http.ResponseWriter, r *http.Request) {
 
 // Verify agent token and return $AUTOMATION_SECRET
 func VerifyAgentToken(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received token for automation secret request")
 	// Decode the incoming JSON to get the token and agent ID
 	var data map[string]string
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
+		log.Printf("could not decode request body: %v\n", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	token, ok := data["token"]
 	if !ok {
+		log.Printf("Token not provided\n")
 		http.Error(w, "Token not provided", http.StatusBadRequest)
 		return
 	}
 
 	agentID, ok := data["agent_id"]
 	if !ok {
+		log.Printf("Agent ID not provided\n")
 		http.Error(w, "Agent ID not provided", http.StatusBadRequest)
 		return
 	}
@@ -149,18 +160,37 @@ func VerifyAgentToken(w http.ResponseWriter, r *http.Request) {
 	//Verify the token
 	storedToken, ok := agentTokens[agentID]
 	if !ok || token != storedToken {
+		log.Printf("Invalid token.\n")
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
+	} else {
+		log.Printf("Token verified for agent %s", agentID)
 	}
 
 	// Delete the token from the agentTokens map
 	delete(agentTokens, agentID)
 
-	// If the token is valid, return the AUTOMATION_SECRET
+	// If the token is valid, respond with the AUTOMATION_SECRET
+	automationSecret := os.Getenv("AUTOMATION_SECRET")
+	if automationSecret == "" {
+		log.Println("AUTOMATION_SECRET not set")
+		http.Error(w, "AUTOMATION_SECRET not set", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with the AUTOMATION_SECRET
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"AUTOMATION_SECRET": os.Getenv("AUTOMATION_SECRET"),
-	})
+	response := map[string]string{"secret": automationSecret}
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Printf("could not encode response: %v\n", err)
+		http.Error(w, "could not encode response", http.StatusInternalServerError)
+		return
+	}
+
+	// Log the response that was sent
+	// log.Printf("Response: %v\n", response)
 }
 
 // CheckMKServiceDiscovery runs the CheckMK service discovery script
@@ -197,6 +227,7 @@ func CMKSvcDiscovery(w http.ResponseWriter, r *http.Request) {
 	// Run the CheckMK service discovery script
 	log.Println("Running service discovery script")
 	cmd := exec.Command("./handlers/cmk_svcd.sh", hostname)
+	cmd.Env = append(os.Environ(), "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
