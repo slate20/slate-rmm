@@ -2,6 +2,9 @@
 
 # This script is used to set up the environment for the application.
 
+# Create /var/run/checkmk directory
+sudo mkdir -p /var/run/checkmk
+
 # Update the apt package list
 sudo apt update && sudo apt upgrade -y
 
@@ -47,6 +50,9 @@ WantedBy=multi-user.target" | sudo tee /etc/systemd/system/slatermm.service
 
 # Reload the systemd daemon
 sudo systemctl daemon-reload
+
+# Build Docker image
+docker build -t slate-checkmk ./server
 
 # Run Docker Services
 docker-compose up -d

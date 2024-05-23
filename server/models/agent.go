@@ -18,4 +18,6 @@ type Agent struct {
 	LastSeen      string   `json:"last_seen"`
 	LastUser      string   `json:"last_user"`
 	Token         string   `json:"token"`
+	Status        string   `json:"status"`
+	Group         string   `json:"group"`
 }

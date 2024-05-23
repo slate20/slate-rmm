@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/user"
 	"runtime"
 	"strconv"
 	"strings"
@@ -33,6 +34,7 @@ type AgentData struct {
 	HardwareSpecs Hardware `json:"hardware_specs"`
 	AgentVersion  string   `json:"agent_version"`
 	LastSeen      string   `json:"last_seen"`
+	LastUser      string   `json:"last_user"`
 	Token         string   `json:"token"`
 }
 
@@ -108,11 +110,26 @@ func getHardwareSpecs() (Hardware, error) {
 	}
 }
 
+func getCurrentUser() (string, error) {
+	user, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	return user.Username, nil
+}
+
 func CollectData() (AgentData, error) {
 	hostname, _ := os.Hostname()
 
 	// Get hardware specs
 	hardware, err := getHardwareSpecs()
+	if err != nil {
+		return AgentData{}, err
+	}
+
+	// Get current user
+	user, err := getCurrentUser()
 	if err != nil {
 		return AgentData{}, err
 	}
@@ -124,6 +141,7 @@ func CollectData() (AgentData, error) {
 		OSVersion:     hardware.OSVersion,
 		HardwareSpecs: hardware,
 		AgentVersion:  "1.0.0",
+		LastUser:      user,
 		LastSeen:      time.Now().Format(time.RFC3339),
 	}, nil
 }

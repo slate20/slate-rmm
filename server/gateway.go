@@ -20,6 +20,9 @@ func NewGateway() *mux.Router {
 		http.ServeFile(w, r, "../agent/slate-rmm-agent.exe")
 	})
 
+	// Route for Livestatus queries
+	router.HandleFunc("/api/livestatus", handlers.QueryLivestatusHandler).Methods("GET")
+
 	return router
 
 }

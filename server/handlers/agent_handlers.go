@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"slate-rmm/database"
+	"slate-rmm/livestatus"
 	"slate-rmm/models"
 	"strconv"
 	"strings"
@@ -311,4 +313,24 @@ func AgentHeartbeat(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error updating agent", http.StatusInternalServerError)
 		return
 	}
+}
+
+// QueryLivestatusHandler handles Livestatus queries
+func QueryLivestatusHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract the query from the request
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		http.Error(w, "Missing query parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Call the QueryLivestatus function with the query
+	response, err := livestatus.QueryLivestatus(query)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to query Livestatus: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Write the response to the client
+	w.Write([]byte(response))
 }
