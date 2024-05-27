@@ -64,17 +64,6 @@ func main() {
 			log.Printf("could not collect data: %v", err)
 		}
 
-		// Save the config in the config file
-		configBytes, err := json.Marshal(config)
-		if err != nil {
-			log.Printf("could not marshal config: %v", err)
-		}
-
-		err = os.WriteFile(configPath, configBytes, 0644)
-		if err != nil {
-			log.Printf("could not write config file: %v", err)
-		}
-
 		// Download the CheckMK agent
 		fmt.Println("Downloading CheckMK agent...")
 		err = downloadFile("http://"+serverURL+":5000/main/check_mk/agents/windows/check_mk_agent.msi", "check_mk_agent.msi")
@@ -110,6 +99,17 @@ func main() {
 
 		// Save the HostID in the config
 		config.HostID = HostID
+
+		// Save the config in the config file
+		configBytes, err := json.Marshal(config)
+		if err != nil {
+			log.Printf("could not marshal config: %v", err)
+		}
+
+		err = os.WriteFile(configPath, configBytes, 0644)
+		if err != nil {
+			log.Printf("could not write config file: %v", err)
+		}
 
 		// Use the token to get the AUTOMATION_SECRET
 		url := config.ServerURL + "/api/agents/secret"
@@ -155,9 +155,9 @@ func main() {
 		// Delete the AUTOMATION_SECRET
 		result.Secret = ""
 
-		// Sleep for 2 minutes to allow the agent to register with the CheckMK server
-		fmt.Println("Waiting to run service discovery (2m)...")
-		time.Sleep(2 * time.Minute)
+		// Sleep for 1 minute to allow the agent to register with the CheckMK server
+		fmt.Println("Waiting to run service discovery (1m)...")
+		time.Sleep(1 * time.Minute)
 
 		// Send service discovery request to the server
 		fmt.Println("Sending service discovery request...")
@@ -180,7 +180,7 @@ func main() {
 		req.Header.Set("Content-Type", "application/json")
 
 		//  Print the request
-		log.Printf("Request: %v", req)
+		//log.Printf("Request: %v", req)
 
 		// Send the request
 		resp, err = http.DefaultClient.Do(req)
@@ -216,7 +216,7 @@ func main() {
 	// fmt.Scanln(&input)
 
 	// Send a heartbeat every minute
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
