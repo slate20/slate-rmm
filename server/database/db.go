@@ -105,15 +105,12 @@ func GetAgent(id string) (*models.Agent, error) {
 	// Scan the row into an Agent struct
 	var agent models.Agent
 	var hardwareSpecsRaw []byte
-	var group sql.NullString
-	if err := row.Scan(&agent.ID, &agent.Hostname, &agent.IPAddress, &agent.OS, &agent.OSVersion, &hardwareSpecsRaw, &agent.AgentVersion, &agent.LastSeen, &group); err != nil {
+	if err := row.Scan(&agent.ID, &agent.Hostname, &agent.IPAddress, &agent.OS, &agent.OSVersion, &hardwareSpecsRaw, &agent.AgentVersion, &agent.LastSeen); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
-
-	agent.Group = group.String
 
 	// Unmarshal the hardware specs
 	if len(hardwareSpecsRaw) > 0 {
@@ -151,17 +148,17 @@ func CreateGroup(groupName string) error {
 }
 
 // GetAllGroups returns all the groups in the database
-func GetAllGroups() ([]string, error) {
-	rows, err := db.Query("SELECT group_name FROM device_groups")
+func GetAllGroups() ([]models.Group, error) {
+	rows, err := db.Query("SELECT group_id, group_name FROM device_groups")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var groups []string
+	var groups []models.Group
 	for rows.Next() {
-		var group string
-		if err := rows.Scan(&group); err != nil {
+		var group models.Group
+		if err := rows.Scan(&group.GroupID, &group.GroupName); err != nil {
 			return nil, err
 		}
 		groups = append(groups, group)
@@ -194,5 +191,47 @@ func UpdateGroup(id string, groupName string) error {
 // DeleteGroup deletes a group from the database
 func DeleteGroup(id string) error {
 	_, err := db.Exec("DELETE FROM device_groups WHERE group_id = $1", id)
+	return err
+}
+
+// GetHostsInGroup returns all the hosts in a group
+func GetHostsInGroup(groupID int) ([]models.Agent, error) {
+	rows, err := db.Query("SELECT a.* FROM agents a JOIN device_group_members dgm ON a.host_id = dgm.host_id WHERE dgm.group_id = $1", groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var agents []models.Agent
+	for rows.Next() {
+		var agent models.Agent
+		var hardwareSpecsRaw sql.RawBytes
+		if err := rows.Scan(&agent.ID, &agent.Hostname, &agent.IPAddress, &agent.OS, &agent.OSVersion, &hardwareSpecsRaw, &agent.AgentVersion, &agent.LastSeen, &agent.LastUser); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
+		}
+		agents = append(agents, agent)
+	}
+
+	return agents, nil
+}
+
+// AddhostToGroup adds a host to a group
+func AddHostToGroup(hostID, groupID int) error {
+	_, err := db.Exec("INSERT INTO device_group_members (host_id, group_id) VALUES ($1, $2)", hostID, groupID)
+	return err
+}
+
+// RemoveHostFromGroup removes a host from a group
+func RemoveHostFromGroup(hostID, groupID int) error {
+	_, err := db.Exec("DELETE FROM device_group_members WHERE host_id = $1 AND group_id = $2", hostID, groupID)
+	return err
+}
+
+// MoveHostToGroup moves a host from one group to another
+func MoveHostToGroup(hostID, newGroupID int) error {
+	_, err := db.Exec("UPDATE device_group_members SET group_id = $1 WHERE host_id = $2", newGroupID, hostID)
 	return err
 }

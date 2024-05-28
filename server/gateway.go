@@ -47,4 +47,8 @@ func groupRoutes(router *mux.Router) {
 	router.HandleFunc("", handlers.CreateGroup).Methods("POST")
 	router.HandleFunc("/{group_id}", handlers.UpdateGroup).Methods("PUT")
 	router.HandleFunc("/{group_id}", handlers.DeleteGroup).Methods("DELETE")
+	router.HandleFunc("/{group_id}/hosts", handlers.GetHostsInGroup).Methods("GET")
+	router.HandleFunc("/{group_id}/add/{host_id}", handlers.AddHostToGroup).Methods("POST")
+	router.HandleFunc("/{group_id}/remove/{host_id}", handlers.RemoveHostFromGroup).Methods("DELETE")
+	router.HandleFunc("/{group_id}/move/{host_id}", handlers.MoveHostToGroup).Methods("PUT")
 }

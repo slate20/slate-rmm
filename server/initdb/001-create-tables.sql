@@ -8,9 +8,7 @@ CREATE TABLE IF NOT EXISTS agents (
     hardware_specs JSONB,
     agent_version VARCHAR(50),
     last_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    last_user VARCHAR(255),
-    group VARCHAR(255),
-    status VARCHAR(50)
+    last_user VARCHAR(255)
 );
 
 -- Create the device_groups Table
