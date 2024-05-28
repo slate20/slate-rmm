@@ -78,12 +78,9 @@ func GetAllAgents() ([]models.Agent, error) {
 	for rows.Next() {
 		var agent models.Agent
 		var hardwareSpecsRaw sql.RawBytes
-		var group sql.NullString
-		if err := rows.Scan(&agent.ID, &agent.Hostname, &agent.IPAddress, &agent.OS, &agent.OSVersion, &hardwareSpecsRaw, &agent.AgentVersion, &agent.LastSeen, &agent.LastUser, &group); err != nil {
+		if err := rows.Scan(&agent.ID, &agent.Hostname, &agent.IPAddress, &agent.OS, &agent.OSVersion, &hardwareSpecsRaw, &agent.AgentVersion, &agent.LastSeen, &agent.LastUser); err != nil {
 			return nil, err
 		}
-
-		agent.Group = group.String
 
 		// Unmarshal the hardware specs
 		if len(hardwareSpecsRaw) > 0 {
