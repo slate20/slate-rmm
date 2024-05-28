@@ -143,3 +143,56 @@ func AgentHeartbeat(id string) error {
 	_, err := db.Exec("UPDATE agents SET last_seen = $1 WHERE host_id = $2", time.Now(), id)
 	return err
 }
+
+// CreateGroup creates a new group in the database
+func CreateGroup(groupName string) error {
+	_, err := db.Exec("INSERT INTO device_groups (group_name) VALUES ($1)", groupName)
+	return err
+}
+
+// GetAllGroups returns all the groups in the database
+func GetAllGroups() ([]string, error) {
+	rows, err := db.Query("SELECT group_name FROM device_groups")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var groups []string
+	for rows.Next() {
+		var group string
+		if err := rows.Scan(&group); err != nil {
+			return nil, err
+		}
+		groups = append(groups, group)
+	}
+
+	return groups, nil
+}
+
+// GetGroup returns a single group from the database
+func GetGroup(id string) (string, error) {
+	row := db.QueryRow("SELECT group_name FROM device_groups WHERE group_id = $1", id)
+
+	var group string
+	if err := row.Scan(&group); err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return "", err
+	}
+
+	return group, nil
+}
+
+// UpdateGroup updates a group in the database
+func UpdateGroup(id string, groupName string) error {
+	_, err := db.Exec("UPDATE device_groups SET group_name = $1 WHERE group_id = $2", groupName, id)
+	return err
+}
+
+// DeleteGroup deletes a group from the database
+func DeleteGroup(id string) error {
+	_, err := db.Exec("DELETE FROM device_groups WHERE group_id = $1", id)
+	return err
+}

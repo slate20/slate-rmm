@@ -21,3 +21,9 @@ type Agent struct {
 	Status        string   `json:"status"`
 	Group         string   `json:"group"`
 }
+
+// Group represents a group of agents
+type Group struct {
+	ID        int32  `json:"group_id"`
+	GroupName string `json:"group_name"`
+}

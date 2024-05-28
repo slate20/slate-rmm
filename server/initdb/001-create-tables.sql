@@ -13,6 +13,21 @@ CREATE TABLE IF NOT EXISTS agents (
     status VARCHAR(50)
 );
 
+-- Create the device_groups Table
+CREATE TABLE IF NOT EXISTS device_groups (
+    group_id SERIAL PRIMARY KEY,
+    group_name VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Create the device_group_members Table
+CREATE TABLE IF NOT EXISTS device_group_members (
+    host_id INT NOT NULL,
+    group_id INT NOT NULL,
+    PRIMARY KEY (host_id, group_id),
+    FOREIGN KEY (host_id) REFERENCES agents(host_id),
+    FOREIGN KEY (group_id) REFERENCES device_groups(group_id)
+);
+
 -- Create the User Table
 CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,

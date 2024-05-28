@@ -13,6 +13,7 @@ func NewGateway() *mux.Router {
 
 	// Define routes for each microservice
 	agentRoutes(router.PathPrefix("/api/agents").Subrouter())
+	groupRoutes(router.PathPrefix("/api/groups").Subrouter())
 
 	// Serve the agent executable
 	router.HandleFunc("/download/agent", func(w http.ResponseWriter, r *http.Request) {
@@ -37,4 +38,13 @@ func agentRoutes(router *mux.Router) {
 	router.HandleFunc("/{id}", handlers.UpdateAgent).Methods("PUT")
 	router.HandleFunc("/{id}", handlers.DeleteAgent).Methods("DELETE")
 	router.HandleFunc("/{id}/heartbeat", handlers.AgentHeartbeat).Methods("POST")
+}
+
+// groupRoutes defines the routes for the group database microservice
+func groupRoutes(router *mux.Router) {
+	router.HandleFunc("", handlers.GetAllGroups).Methods("GET")
+	router.HandleFunc("/{group_id}", handlers.GetGroup).Methods("GET")
+	router.HandleFunc("", handlers.CreateGroup).Methods("POST")
+	router.HandleFunc("/{group_id}", handlers.UpdateGroup).Methods("PUT")
+	router.HandleFunc("/{group_id}", handlers.DeleteGroup).Methods("DELETE")
 }
