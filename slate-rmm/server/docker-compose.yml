@@ -33,9 +33,23 @@ services:
       - AUTOMATION_SECRET=${AUTOMATION_SECRET}
     volumes:
       - checkmk-data:/omd/sites
-      - /var/run/checkmk:/omd/sites/main/tmp/run/live
     env_file:
       - .env
+
+  remotely:
+    image: immybot/remotely:latest
+    ports:
+      - "4000:4000"
+      - "4080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_HTTP_PORTS=4000
+      - Remotely_ApplicationOptions__DbProvider=SQLite
+      - Remotely_ConnectionStrings__SQLite=Data Source=/app/AppData/Remotely.db
+      - Remotely_ConnectionStrings__SQLServer=Server=(localdb)\\mssqllocaldb;Database=Remotely-Server-53bc9b9d-9d6a-45d4-8429-2a2761773502;Trusted_Connection=True;MultipleActiveResultSets=true
+      - Remotely_ConnectionStrings__PostgreSQL=Server=Host=localhost;Database=Remotely;Username=postgres;
+    volumes:
+      - /var/www/remotely:/app/AppData
 
 volumes:
   postgres-data:

@@ -5,6 +5,9 @@
 # Create /var/run/checkmk directory
 sudo mkdir -p /var/run/checkmk
 
+# Create /var/www/remotely directory
+sudo mkdir -p /var/www/remotely
+
 # Update the apt package list
 sudo apt update && sudo apt upgrade -y
 
