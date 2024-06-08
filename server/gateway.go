@@ -21,6 +21,12 @@ func NewGateway() *mux.Router {
 		http.ServeFile(w, r, "../agent/slate-rmm-agent.exe")
 	})
 
+	// Serve the Remotely Windows agent
+	router.HandleFunc("/download/remotely-win", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Disposition", "attachment; Install-Remotely.ps1")
+		http.ServeFile(w, r, "../agent/Install-Remotely.ps1")
+	})
+
 	// Route for Livestatus queries
 	router.HandleFunc("/api/livestatus", handlers.QueryLivestatusHandler).Methods("GET")
 

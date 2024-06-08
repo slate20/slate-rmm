@@ -197,6 +197,20 @@ func main() {
 		log.Printf("Response: %v", bodyResp)
 		log.Println("Service discovery request sent")
 
+		// Download the Remotely Windows installer
+		fmt.Println("Downloading Remotely agent...")
+		err = downloadFile("http://"+serverURL+":8080/download/remotely-win", "Install-Remotely.ps1")
+		if err != nil {
+			log.Printf("could not download Remotely agent: %v", err)
+		}
+
+		// Quietly install the Remotely agent
+		fmt.Println("Installing Remotely agent...")
+		err = exec.Command("powershell", "-File", "Install-Remotely.ps1").Run()
+		if err != nil {
+			log.Printf("could not install Remotely agent: %v", err)
+		}
+
 	} else {
 		// If the config file exists, read the config from the file
 		configBytes, err := os.ReadFile(configPath)
